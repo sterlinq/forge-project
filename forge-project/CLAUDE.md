@@ -9,8 +9,21 @@ phase 2, see caveat below). Desktop app, not a web app.
 - Backend/DB/Auth: Supabase (Postgres, real-time, OAuth token storage)
 - Language: TypeScript throughout — convert stub .js files as you build them out
 - Styling: plain CSS + variables (`src/renderer/styles.css`), no framework.
-  Dark theme, ember-amber accent (`--accent`). Native OS window chrome
-  (not frameless) — revisit only if a custom title bar is explicitly wanted.
+  Dark theme, "Project Arcanum" identity (cyan accent, `--accent: #0FF3F5`) —
+  **replaces the former ember-amber theme, an intentional full reversal**,
+  sourced from `docs/design-reference/project-arcanum.html` (as named in the
+  task that made the switch — actually found at `Desktop/Arcanum/
+  project-arcanum.html`, a sibling project directory, not inside this repo;
+  flagging in case that path ever needs correcting). 5-step dark scale
+  (`--bg-0` `#0A0A0B` through `--bg-4` `#303032`), `--border: #3A3A3D`,
+  semantic colors `--verified`/`--neutral-tag`/`--warning`/`--secret`/
+  `--gold`. Three font roles, embedded as base64 woff2 (Latin subset) directly
+  in `styles.css` rather than fetched from Google Fonts (CSP in some runtimes
+  silently blocks that): `--font-title` (Cinzel, headings/titles),
+  `--font-mono` (JetBrains Mono, labels/captions/buttons/uppercase small
+  text), `--font-body` (Nunito Sans, everything else). Native OS window
+  chrome (not frameless) — revisit only if a custom title bar is explicitly
+  wanted.
 
 ## Architecture
 1. `src/main` — Electron main process. Owns OAuth redirect handling (opens
