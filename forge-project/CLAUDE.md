@@ -119,10 +119,52 @@ rosters later), but a user can only update their own row; no insert policy
 (handle_new_user, security definer, is the only insert path by design) and
 no delete policy (no delete flow exists). `vite.config.js`/
 `tsconfig.json` now exist; `npm run start` runs Vite + Electron together.
-Riot/Battle.net services remain stubs.
-Next step: repeat the OAuth round-trip for a second platform (Battle.net has
-a more standard OAuth flow than Riot, which needs an approved production key
-first).
+
+Battle.net round-trip (WoW) wired end-to-end: authorization-code OAuth via
+the system browser, caught by a *fixed*-port (53682, `/callback`) localhost
+server (`battlenet:startAuth` in `src/main/index.js`) — unlike Steam's
+ephemeral-port server, because Battle.net validates `redirect_uri` exactly
+against what's registered in the developer portal. Token exchange +
+`/oauth/userinfo` (for the BattleTag) happen in main (`battlenet:completeAuth`,
+needs `BATTLENET_CLIENT_SECRET`), then `battlenet:fetchProfile` lists the
+account's characters across realms and loops each for earned achievements —
+same CORS/secret-boundary reasoning as `steam:fetchLibrary`. Renderer
+(`LibraryView.tsx`) upserts the token into `linked_accounts`, upserts one
+`games` row (`platform_game_id: 'wow'` — one row per character would be
+wrong, see Known limitations), and inserts newly-earned `milestones`
+(deduped against existing titles per game, since `milestones` has no unique
+constraint to upsert against). A stored, still-valid token is reused on
+"Connect Battle.net" instead of forcing a fresh consent screen every time.
+`public.linked_accounts` and `public.milestones` picked up the same
+self-scoped RLS policy as `games` while wiring this (`auth.uid() = user_id`,
+`for all`) — both had RLS enabled with zero policies until now, same gap
+class as `public.users`.
+
+Riot remains the only stubbed platform — see Known limitations below.
+
+## Known limitations
+- **Riot**: not started. Needs an approved RSO production key first
+  (~2 week review, apply early) — dev keys can't do user login at all.
+- **Battle.net token refresh**: `linked_accounts.token_expires_at` is
+  checked before reusing a stored token (`isTokenExpired()` in
+  `src/services/battlenet.ts`), but there's no active refresh-token flow —
+  once expired, the user has to reconnect (fresh consent screen) rather
+  than the app silently refreshing. Fine for now since every connect click
+  already re-authenticates; would need addressing before any background/
+  scheduled resync is added.
+- **Battle.net games row is per-account, not per-character**: WoW has one
+  `games` row (`platform_game_id: 'wow'`) regardless of how many characters
+  the account has — Blizzard's API doesn't expose total `/played` time, so
+  `playtime_minutes` stays 0. Character-level detail only shows up in
+  `milestones` titles (`"<achievement> — <character>"`), not as separate
+  library entries.
+- **Battle.net milestones have no `rarity_pct`**: Blizzard's achievement
+  API doesn't expose population % without extra static-game-data calls —
+  left `null`, unlike what the schema supports for Steam-sourced milestones
+  (not populated there either yet, but the field exists for when it is).
+- **Region is hardcoded to `'us'`** for Battle.net (`getOAuthLoginUrl`,
+  `fetchAccountProfile`, etc. all default to it) — no region-selector UI
+  exists yet; non-US accounts can't connect until one's added.
 
 ## Conventions
 - One commit per working slice, not per file.

@@ -228,3 +228,22 @@ create policy "users can update their own profile" on users
   to authenticated
   using (auth.uid() = id)
   with check (auth.uid() = id);
+
+-- Same RLS-enabled-no-policy gap as `users` above, found while wiring the
+-- Battle.net round-trip: linked_accounts holds OAuth tokens (self-only, no
+-- reason for any other user to read them) and milestones holds per-user
+-- achievement data. Both follow the `games` all-scoped-to-self pattern —
+-- no read-sharing need has come up for either yet (unlike users/display_name).
+alter table linked_accounts enable row level security;
+create policy "users can manage their own linked accounts" on linked_accounts
+  for all
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+alter table milestones enable row level security;
+create policy "users can manage their own milestones" on milestones
+  for all
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

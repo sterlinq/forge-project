@@ -10,4 +10,14 @@ contextBridge.exposeInMainWorld('forge', {
       ipcRenderer.on('steam:callback', (_event, steamId64) => callback(steamId64)),
     fetchLibrary: (steamId64) => ipcRenderer.invoke('steam:fetchLibrary', steamId64),
   },
+  battlenet: {
+    startAuth: () => ipcRenderer.invoke('battlenet:startAuth'),
+    onCallback: (callback) =>
+      ipcRenderer.on('battlenet:callback', (_event, code) => callback(code)),
+    onError: (callback) =>
+      ipcRenderer.on('battlenet:error', (_event, reason) => callback(reason)),
+    completeAuth: (code) => ipcRenderer.invoke('battlenet:completeAuth', code),
+    fetchProfile: (accessToken, region) =>
+      ipcRenderer.invoke('battlenet:fetchProfile', { accessToken, region }),
+  },
 });
