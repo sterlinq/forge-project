@@ -208,3 +208,23 @@ create policy "users can manage their own games" on games
   to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Supabase enables RLS by default but no policies existed on `users` until
+-- now — see PROJECT_CONTEXT_FORGE.md "Known limitations" (this closes that
+-- gap). display_name/created_at are non-sensitive, so read access is open
+-- to any authenticated user (needed for friends/guilds/LFG rosters, none of
+-- which are built yet but will read other users' rows). Writes stay
+-- self-only. No insert policy: handle_new_user (security definer) is the
+-- only insert path by design. No delete policy: no delete flow exists.
+alter table users enable row level security;
+
+create policy "authenticated users can read any profile" on users
+  for select
+  to authenticated
+  using (true);
+
+create policy "users can update their own profile" on users
+  for update
+  to authenticated
+  using (auth.uid() = id)
+  with check (auth.uid() = id);

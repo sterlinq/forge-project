@@ -112,7 +112,12 @@ renderer bundle) → normalizes into `games` rows → upserts to Supabase →
 renders list. Real Supabase Auth (email/password) is wired in
 `src/renderer/App.tsx`/`src/services/supabase.ts` — `public.users` rows are
 created automatically via an `auth.users` trigger (`supabase/schema.sql`),
-and `games` RLS is scoped to `auth.uid() = user_id`. `vite.config.js`/
+and `games` RLS is scoped to `auth.uid() = user_id`. `public.users` RLS now
+has policies too: any authenticated user can read any row (display_name/
+created_at are non-sensitive, and this is needed for friends/guilds/LFG
+rosters later), but a user can only update their own row; no insert policy
+(handle_new_user, security definer, is the only insert path by design) and
+no delete policy (no delete flow exists). `vite.config.js`/
 `tsconfig.json` now exist; `npm run start` runs Vite + Electron together.
 Riot/Battle.net services remain stubs.
 Next step: repeat the OAuth round-trip for a second platform (Battle.net has
